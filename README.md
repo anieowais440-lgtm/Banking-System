@@ -1,16 +1,9 @@
-# Banking-System
-==============================
-MPAY PROJECT
-ALL CODE IN ONE FILE
+Banking System 
+MPAY PROJECT - ALL CODE IN ONE FILE
 ==============================
 
-
-========================================
-SECTION 1
-C PROGRAM
-MPAY CONSOLE APPLICATION
-========================================
-
+SECTION 1: C CONSOLE APP
+==============================
 #include <stdio.h>
 
 #define MAX_TX 50
@@ -156,32 +149,30 @@ int main() {
     return 0;
 }
 
-
-========================================
-SECTION 2
-ANDROID JAVA CODE
-========================================
+==============================
+SECTION 2: ANDROID JAVA APP
+==============================
 
 MainActivity.java
-
+----------------
 package com.example.mpay;
 
-import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
-import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
 
-    static int balance = 5000;
-    static int pin = 1234;
-    static ArrayList<String> history = new ArrayList<>();
-
+    int balance = 5000;
+    int pin = 1234;
+    int otp = 1111;
     EditText input;
-    TextView output;
+    TextView output, historyView;
+    SharedPreferences sp;
+    String history = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -190,181 +181,124 @@ public class MainActivity extends AppCompatActivity {
 
         input = findViewById(R.id.input);
         output = findViewById(R.id.output);
+        historyView = findViewById(R.id.historyText);
 
-        findViewById(R.id.loginBtn).setOnClickListener(v -> login());
-        findViewById(R.id.sendBtn).setOnClickListener(v -> send());
-        findViewById(R.id.addBtn).setOnClickListener(v -> add());
-        findViewById(R.id.historyBtn).setOnClickListener(v -> history());
+        sp = getSharedPreferences("MPAY_PREF", MODE_PRIVATE);
+        balance = sp.getInt("balance", 5000);
+        history = sp.getString("history", "");
+        historyView.setText(history);
+
+        Button loginBtn = findViewById(R.id.loginBtn);
+        Button sendBtn = findViewById(R.id.sendBtn);
+        Button addBtn = findViewById(R.id.addBtn);
+        Button refreshBtn = findViewById(R.id.refreshBtn);
+
+        loginBtn.setOnClickListener(v -> login());
+        sendBtn.setOnClickListener(v -> sendMoney());
+        addBtn.setOnClickListener(v -> addMoney());
+        refreshBtn.setOnClickListener(v -> refreshHistory());
     }
 
     void login() {
-        if (Integer.parseInt(input.getText().toString()) == pin)
-            output.setText("Login success Balance " + balance);
-        else
-            output.setText("Wrong PIN");
+        int entered = Integer.parseInt(input.getText().toString());
+        if (entered == pin) output.setText("Login success. Balance " + balance);
+        else output.setText("Wrong PIN");
     }
 
-    void send() {
-        Intent i = new Intent(this, OtpActivity.class);
-        i.putExtra("amount", Integer.parseInt(input.getText().toString()));
-        startActivity(i);
+    void sendMoney() {
+        int amount = Integer.parseInt(input.getText().toString());
+        if (amount <= 0) { output.setText("Enter valid amount"); return; }
+        if (amount > balance) { output.setText("Insufficient balance"); return; }
+        output.setText("OTP sent: 1111 (use this for demo)");
+        int enteredOtp = otp;
+        if (enteredOtp == otp) {
+            balance -= amount;
+            history += "Debit " + amount + "\n";
+            saveData();
+            output.setText("Money sent. Balance " + balance);
+            historyView.setText(history);
+        } else {
+            output.setText("Invalid OTP");
+        }
     }
 
-    void add() {
-        int amt = Integer.parseInt(input.getText().toString());
-        balance += amt;
-        history.add("Credit " + amt);
-        output.setText("Added Balance " + balance);
+    void addMoney() {
+        int amount = Integer.parseInt(input.getText().toString());
+        if (amount <= 0) { output.setText("Enter valid amount"); return; }
+        balance += amount;
+        history += "Credit " + amount + "\n";
+        saveData();
+        output.setText("Money added. Balance " + balance);
+        historyView.setText(history);
     }
 
-    void history() {
-        startActivity(new Intent(this, HistoryActivity.class));
+    void refreshHistory() {
+        historyView.setText(history);
     }
-}
 
-
-OtpActivity.java
-
-package com.example.mpay;
-
-import android.os.Bundle;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.TextView;
-import androidx.appcompat.app.AppCompatActivity;
-
-public class OtpActivity extends AppCompatActivity {
-
-    int otp = 1111;
-    int amount;
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_otp);
-
-        amount = getIntent().getIntExtra("amount", 0);
-
-        EditText otpInput = findViewById(R.id.otpInput);
-        TextView status = findViewById(R.id.status);
-        Button verify = findViewById(R.id.verifyBtn);
-
-        verify.setOnClickListener(v -> {
-            if (Integer.parseInt(otpInput.getText().toString()) == otp) {
-                MainActivity.balance -= amount;
-                MainActivity.history.add("Debit " + amount);
-                status.setText("Payment success Balance " + MainActivity.balance);
-            } else {
-                status.setText("Invalid OTP");
-            }
-        });
+    void saveData() {
+        SharedPreferences.Editor editor = sp.edit();
+        editor.putInt("balance", balance);
+        editor.putString("history", history);
+        editor.apply();
     }
 }
 
-
-HistoryActivity.java
-
-package com.example.mpay;
-
-import android.os.Bundle;
-import android.widget.TextView;
-import androidx.appcompat.app.AppCompatActivity;
-
-public class HistoryActivity extends AppCompatActivity {
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_history);
-
-        TextView tv = findViewById(R.id.historyText);
-        StringBuilder sb = new StringBuilder();
-        for (String s : MainActivity.history) sb.append(s).append("\n");
-        tv.setText(sb.toString());
-    }
-}
-
-
-========================================
-SECTION 3
-ANDROID XML FILES
-========================================
-
+==============================
 activity_main.xml
-
+----------------
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
- android:orientation="vertical"
- android:padding="16dp"
- android:layout_width="match_parent"
- android:layout_height="match_parent">
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
 
- <EditText android:id="@+id/input"
-  android:hint="Enter PIN or Amount"
-  android:inputType="number"
-  android:layout_width="match_parent"
-  android:layout_height="wrap_content"/>
+    <EditText
+        android:id="@+id/input"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Enter PIN or Amount"
+        android:inputType="number" />
 
- <Button android:id="@+id/loginBtn" android:text="Login"
-  android:layout_width="match_parent"
-  android:layout_height="wrap_content"/>
+    <Button
+        android:id="@+id/loginBtn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Login" />
 
- <Button android:id="@+id/sendBtn" android:text="Send Money"
-  android:layout_width="match_parent"
-  android:layout_height="wrap_content"/>
+    <Button
+        android:id="@+id/sendBtn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Send Money" />
 
- <Button android:id="@+id/addBtn" android:text="Add Money"
-  android:layout_width="match_parent"
-  android:layout_height="wrap_content"/>
+    <Button
+        android:id="@+id/addBtn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Add Money" />
 
- <Button android:id="@+id/historyBtn" android:text="History"
-  android:layout_width="match_parent"
-  android:layout_height="wrap_content"/>
+    <Button
+        android:id="@+id/refreshBtn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Refresh History" />
 
- <TextView android:id="@+id/output"
-  android:text="Status"
-  android:layout_width="match_parent"
-  android:layout_height="wrap_content"/>
+    <TextView
+        android:id="@+id/output"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Status"
+        android:padding="8dp" />
+
+    <TextView
+        android:id="@+id/historyText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="History"
+        android:padding="8dp" />
+
 </LinearLayout>
-
-
-activity_otp.xml
-
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
- android:orientation="vertical"
- android:padding="16dp"
- android:layout_width="match_parent"
- android:layout_height="match_parent">
-
- <EditText android:id="@+id/otpInput"
-  android:hint="Enter OTP"
-  android:inputType="number"
-  android:layout_width="match_parent"
-  android:layout_height="wrap_content"/>
-
- <Button android:id="@+id/verifyBtn"
-  android:text="Verify OTP"
-  android:layout_width="match_parent"
-  android:layout_height="wrap_content"/>
-
- <TextView android:id="@+id/status"
-  android:text="Waiting"
-  android:layout_width="match_parent"
-  android:layout_height="wrap_content"/>
-</LinearLayout>
-
-
-activity_history.xml
-
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
- android:layout_width="match_parent"
- android:layout_height="match_parent">
-
- <TextView android:id="@+id/historyText"
-  android:text="No data"
-  android:padding="16dp"
-  android:layout_width="match_parent"
-  android:layout_height="wrap_content"/>
-</ScrollView>
 
 ==============================
 END OF FILE
